@@ -306,7 +306,8 @@ const NAV={stack:[],ignore:0,backs:0,queue:0};
 function navPush(close){ NAV.stack.push(close); if(NAV.backs>0) NAV.queue++; else { try{ history.pushState({n:1},''); }catch(e){} } }
 function navPop(){ NAV.stack.pop(); if(history.state&&history.state.n>0&&NAV.backs===0){ NAV.ignore++; NAV.backs++; history.back(); } else if(NAV.queue>0){ NAV.queue--; } }
 function navBack(){ const top=NAV.stack[NAV.stack.length-1]; if(top){ NAV.stack.pop(); if(history.state&&history.state.n>0&&NAV.backs===0){ NAV.ignore++; NAV.backs++; history.back(); } else if(NAV.queue>0){ NAV.queue--; } top(); } }
-try{ history.replaceState({n:-1},''); history.pushState({n:0},''); }catch(e){}
+let DEEP=null; try{ const t=new URLSearchParams(location.search).get('t'); if(t&&/^\d+$/.test(t)) DEEP=String(+t); }catch(e){}
+try{ history.replaceState({n:-1},'',location.pathname+location.hash); history.pushState({n:0},''); }catch(e){}
 addEventListener('popstate',()=>{
   if(NAV.ignore){ NAV.ignore--; NAV.backs=Math.max(0,NAV.backs-1); while(NAV.queue>0){ NAV.queue--; history.pushState({n:1},''); } return; }
   const c=NAV.stack.pop();
@@ -325,7 +326,6 @@ async function connect(){ $('gateMsg').textContent='Conectando à congregação�
 $('gateRetry').addEventListener('click',connect);
 $('btnReconnect').addEventListener('click',()=>{ localStorage.removeItem('cartoes_cfg'); location.reload(); });
 auth.onAuthStateChanged(u=>{ if(!u){ auth.signInAnonymously().catch(()=>{ if(CFG) start(); else { $('gateMsg').textContent='Não foi possível entrar. Confira a internet e tente de novo.'; $('gateRetry').classList.remove('hide'); } }); return; } if(!congRef) connect(); });
-if(CFG) start();   // já conectado antes: abre na hora, mesmo sem internet
 
 /* ---------- dados ---------- */
 function start(){ if(!CFG||congRef) return; $('gate').classList.add('hide'); congRef=dbFS.collection('congregacoes').doc(CFG.cong); $('cfgCong').textContent=CFG.nome||'Congregação';
@@ -333,7 +333,7 @@ function start(){ if(!CFG||congRef) return; $('gate').classList.add('hide'); con
   unsubs.push(congRef.collection('publico').doc('dados').onSnapshot(s=>{ if(!s.exists) return; const d=s.data(); NOMES=d.nomes||{}; CONG=d.cong||''; if(CONG) $('cfgCong').textContent=CONG; setSync(); render(); },()=>setSync()));
   unsubs.push(congRef.collection('cartoes').onSnapshot(s=>{ CARDS={}; s.forEach(d=>{ CARDS[d.id]=Object.assign({id:d.id},d.data()); }); render(); setSync(); },()=>setSync()));
   if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
-  renderList(); }
+  renderList(); if(DEEP){ const k=DEEP; DEEP=null; openTerr(k); toast('Território '+pad2(k)+' aberto pelo QR Code'); } }
 const KEYS=()=>Object.keys(NOMES).sort((a,b)=>+a-+b);
 function nome(k){ return (NOMES[k]&&NOMES[k].n)||('Território '+pad2(k)); }
 function areaOf(k){ return (NOMES[k]&&NOMES[k].a)||'Urbano'; }
@@ -345,7 +345,7 @@ function talked(c,h){ return marks(c,h).some(Boolean); }
 function progress(c){ const hs=houses(c); return {n:hs.length,d:hs.filter(h=>talked(c,h)).length}; }
 function pLevel(c){ const {n,d}=progress(c); return !n?'empty':d===0?'none':d===n?'all':'some'; }
 function tProgress(k){ let n=0,d=0; cardsOf(k).forEach(c=>{ const p=progress(c); n+=p.n; d+=p.d; }); return {n,d}; }
-function render(){ if(scr==='scHome') renderList(); else if(scr==='scTerr') renderTerr(); else if(scr==='scCard'&&CARDS[curQ]) renderCard(); else if(scr==='scCard'){ toast('Este cartão foi removido no app principal'); navBack(); } }
+function render(){ if(scr==='scHome') renderList(); else if(scr==='scTerr'){ terrHead(curK); renderTerr(); } else if(scr==='scCard'&&CARDS[curQ]) renderCard(); else if(scr==='scCard'){ toast('Este cartão foi removido no app principal'); navBack(); } }
 
 /* ---------- sincronização ---------- */
 let pending=0;
@@ -362,7 +362,8 @@ function renderList(){ const term=$('q').value.trim().toLowerCase(); const ks=KE
 $('q').addEventListener('input',renderList);
 
 /* ---------- tela 2: quadras ---------- */
-function openTerr(k,fromNav){ curK=k; if(!fromNav) navPush(()=>{ show('scHome'); renderList(); }); $('tTitle').textContent=`${pad2(k)} · ${nome(k)}`; $('tSub').textContent=areaOf(k); renderTerr(); show('scTerr'); }
+function terrHead(k){ $('tTitle').textContent=`${pad2(k)} · ${nome(k)}`; $('tSub').textContent=areaOf(k); }
+function openTerr(k,fromNav){ curK=k; if(!fromNav) navPush(()=>{ show('scHome'); renderList(); }); terrHead(k); renderTerr(); show('scTerr'); }
 function renderTerr(){ const k=curK,p=tProgress(k),qs=cardsOf(k); $('tsum').innerHTML=`<div class="big">${p.n?Math.round(p.d/p.n*100):0}%</div><div class="tx"><b>${p.d} de ${p.n}</b> casas faladas em ${qs.length} quadra${qs.length!==1?'s':''}<div class="track"><i style="width:${p.n?p.d/p.n*100:0}%"></i></div></div>`;
   const groups={}; qs.forEach(c=>{ const m=String(c.quadra).match(/^(\d+)([A-Za-z]?)$/); const n=m?m[1]:c.quadra,L=m?m[2]:''; (groups[n]=groups[n]||[]).push({id:c.id,L,c}); }); const order=Object.keys(groups).sort((a,b)=>(+a||999)-(+b||999));
   $('qgrid').innerHTML=order.length?order.map(n=>{ const g=groups[n]; const multi=g.length>1||g[0].L; const btn=it=>{ const pr=progress(it.c); return `<button data-q="${it.id}" data-p="${pLevel(it.c)}">${it.L||'Abrir cartão'}<small>${pr.n?`${pr.d}/${pr.n}`:'sem casas'}</small></button>`; }; return `<div class="qcard"><div class="qn"><small>Quadra</small>${esc(n)}</div>${multi?`<div class="letters">${g.map(btn).join('')}</div>`:`<button class="single" data-q="${g[0].id}" data-p="${pLevel(g[0].c)}">Abrir cartão <small>${progress(g[0].c).n?progress(g[0].c).d+'/'+progress(g[0].c).n:'sem casas'}</small></button>`}</div>`; }).join(''):'<div class="empty">Este território ainda não tem cartões de quadra.</div>';
@@ -411,6 +412,7 @@ function closeAsk(v,fromNav){ if(!$('askmodal').classList.contains('open')) retu
 $('askActs').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; closeAsk(+b.dataset.i,false); });
 $('askmodal').addEventListener('click',e=>{ if(e.target===$('askmodal')) closeAsk(-1,false); });
 setSync(); renderList();
+if(CFG) start();   // já conectado antes: abre na hora, mesmo sem internet (fica no fim: tudo já declarado)
 
 </script>
 </body>

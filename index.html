@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#0B4A34">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Cartões · Nosso Território</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* App secundário "Cartões": mesma identidade do Nosso Território, só em modo claro.
+   Três telas empilhadas: territórios → quadras do território → cartão da quadra. */
+:root{
+  --bg:#F1F4F2; --surface:#FFFFFF; --surface2:#F7F9F8; --line:#E3E8E5; --line2:#D3DAD6;
+  --text:#0F1613; --muted:#6E7D76; --faint:#9AA8A1;
+  --acc:#0E7C5A; --acc-t:#FFFFFF; --acc-soft:#DFF1E9;
+  --red:#D9534A; --red-soft:#FBE6E4; --amber:#D08A16; --amber-soft:#FBF0DA;
+  --ink:#0B4A34; --ink2:#3E6B57; --glass:rgba(255,255,255,.88);
+  --sh:0 1px 2px rgba(15,22,19,.06), 0 10px 24px -16px rgba(15,22,19,.5);
+  --sh-l:0 -2px 8px rgba(15,22,19,.05), 0 -24px 48px -28px rgba(15,22,19,.5);
+  --r:20px; --r2:14px; --r3:10px;
+  --font:Manrope,system-ui,-apple-system,sans-serif; --hand:Caveat,"Comic Sans MS",cursive;
+  color-scheme:light;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.45;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;overflow:hidden}
+button,input,select{font:inherit;color:inherit}
+button{border:none;background:none;cursor:pointer;padding:0}
+button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.hide{display:none!important}
+
+/* ---------- topo ---------- */
+.top{position:fixed;left:0;right:0;top:0;z-index:30;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 8px;background:var(--glass);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.bar{display:flex;align-items:center;gap:8px}
+.logo{width:44px;height:44px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-family:var(--hand);font-weight:700;font-size:26px;flex:none;box-shadow:var(--sh);border:1px solid var(--line)}
+.iconbtn{width:44px;height:44px;border-radius:50%;background:var(--surface);border:1px solid var(--line);display:grid;place-items:center;box-shadow:var(--sh);flex:none}
+.iconbtn:active{transform:scale(.94)}
+.iconbtn svg{width:19px;height:19px;stroke:var(--ink);fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.sfield{flex:1;min-width:0;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:0 6px 0 14px;height:46px;box-shadow:var(--sh)}
+.sfield:focus-within{border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-soft)}
+.sfield svg{width:19px;height:19px;stroke:var(--acc);fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.sfield input{flex:1;min-width:0;border:none;background:none;font-size:15px;font-weight:600;padding:0;height:100%}
+.sfield input:focus{outline:none}
+.sfield input::placeholder{color:var(--faint);font-weight:500}
+.ttl{flex:1;min-width:0}
+.ttl b{display:block;font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.01em}
+.ttl small{display:block;font-size:11.5px;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* estado de sincronização */
+.sync{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:700;color:var(--muted);padding:5px 11px;border-radius:999px;background:var(--surface);border:1px solid var(--line);align-self:flex-start}
+.sync i{width:8px;height:8px;border-radius:50%;background:var(--acc);display:inline-block}
+.sync[data-s="off"] i{background:var(--amber)}
+.sync[data-s="busy"] i{background:var(--acc);animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.3}}
+
+/* ---------- telas ---------- */
+.screen{position:fixed;left:0;right:0;top:0;bottom:0;overflow-y:auto;padding:calc(76px + env(safe-area-inset-top,0px)) 16px calc(24px + env(safe-area-inset-bottom,0px));display:none;animation:fade .2s ease;background:var(--bg)}
+.screen.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.wrap{max-width:720px;margin:0 auto}
+.eyebrow{font-size:11px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--ink2)}
+h1{font-family:var(--hand);font-weight:700;color:var(--ink);font-size:40px;line-height:1;margin:6px 0 10px;text-wrap:balance}
+.gsep{display:flex;align-items:center;gap:10px;margin:18px 0 9px}
+.gsep h2{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0;white-space:nowrap}
+.gsep .l{flex:1;height:1px;background:var(--line)}
+.gsep .c{font-size:11.5px;color:var(--faint);font-weight:700}
+.tlist{display:grid;grid-template-columns:1fr;gap:8px}
+@media(min-width:620px){.tlist{grid-template-columns:1fr 1fr}}
+.trow{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r2);padding:11px 13px;text-align:left;width:100%;box-shadow:var(--sh)}
+.trow:active{transform:scale(.985)}
+.trow .num{width:44px;height:44px;border-radius:13px;flex:none;display:grid;place-items:center;font-size:17px;font-weight:800;background:var(--surface2);color:var(--muted);border:1px solid var(--line)}
+.trow[data-p="some"] .num{background:var(--amber-soft);color:var(--amber);border-color:transparent}
+.trow[data-p="all"] .num{background:var(--acc);color:var(--acc-t);border-color:transparent}
+.trow .bd{flex:1;min-width:0}
+.trow .bd b{display:block;font-size:14.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trow .bd small{display:block;font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trow .track{height:5px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:6px}
+.trow .track i{display:block;height:100%;background:var(--acc)}
+.trow .r{flex:none;font-size:12px;font-weight:800;color:var(--muted)}
+.empty{text-align:center;color:var(--muted);padding:40px 20px;font-size:13.5px}
+
+/* ---------- quadras do território ---------- */
+.qgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(min-width:480px){.qgrid{grid-template-columns:repeat(3,1fr)}}
+.qcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r2);padding:12px 12px 10px;box-shadow:var(--sh);text-align:left;display:flex;flex-direction:column;gap:6px;position:relative}
+.qcard .qn{font-family:var(--hand);font-weight:700;font-size:40px;line-height:.9;color:var(--ink)}
+.qcard .qn small{font-family:var(--font);font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:2px}
+.qcard .letters{display:flex;gap:6px;margin-top:4px}
+.qcard .letters button{flex:1;padding:9px 0;border-radius:var(--r3);border:1.5px solid var(--line);background:var(--surface2);font-weight:800;font-size:15px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.qcard .letters button small{font-size:10px;font-weight:700;color:var(--muted)}
+.qcard .letters button[data-p="all"]{background:var(--acc-soft);border-color:var(--acc);color:var(--acc)}
+.qcard .letters button[data-p="some"]{background:var(--amber-soft);border-color:var(--amber);color:var(--amber)}
+.qcard .letters button[data-p="none"]{background:var(--surface2)}
+.qcard .letters button[data-p="empty"]{color:var(--faint);border-style:dashed}
+.qcard .letters button:active{transform:scale(.97)}
+.qcard .single{margin-top:4px;padding:9px 0;border-radius:var(--r3);border:1.5px solid var(--line);background:var(--surface2);font-weight:800;font-size:13px;width:100%;display:flex;justify-content:center;gap:6px;align-items:center}
+.qcard .single small{font-weight:700;color:var(--muted);font-size:11px}
+.qcard .single[data-p="all"]{background:var(--acc-soft);border-color:var(--acc);color:var(--acc)}
+.qcard .single[data-p="some"]{background:var(--amber-soft);border-color:var(--amber);color:var(--amber)}
+.qcard .single[data-p="empty"]{color:var(--faint);border-style:dashed}
+.sumbar{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:13px 15px;box-shadow:var(--sh);margin-bottom:12px}
+.sumbar .big{font-size:26px;font-weight:800;letter-spacing:-.03em;color:var(--acc);line-height:1}
+.sumbar .tx{flex:1;min-width:0;font-size:12.5px;color:var(--muted)}
+.sumbar .tx b{color:var(--text)}
+.sumbar .track{height:7px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:6px}
+.sumbar .track i{display:block;height:100%;background:var(--acc)}
+
+/* ---------- cartão ---------- */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden}
+.card .ch{display:flex;align-items:center;gap:12px;padding:14px 16px;background:linear-gradient(160deg,#FBFCFB,#F3F7F4);border-bottom:1px solid var(--line);position:relative;overflow:hidden}
+.card .ch::before{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(45deg, rgba(11,74,52,.07) 0 1px, transparent 1px 12px)}
+.card .ch>*{position:relative}
+.card .ch .q{font-family:var(--hand);font-weight:700;font-size:54px;line-height:.85;color:var(--ink)}
+.card .ch .q small{display:block;font-family:var(--font);font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);margin-bottom:4px}
+.card .ch .m{flex:1;min-width:0;text-align:right}
+.card .ch .m b{display:block;font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .ch .m small{display:block;font-size:11.5px;color:var(--ink2);font-weight:600}
+.visits{padding:10px 14px;border-bottom:1px solid var(--line);display:grid;gap:6px}
+.visit{display:grid;grid-template-columns:30px 1fr 1fr;gap:8px;align-items:center}
+.visit .n{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-weight:800;font-size:13px;background:var(--surface2);border:1px solid var(--line);color:var(--muted)}
+.visit .n[data-on="1"]{background:var(--acc);color:var(--acc-t);border-color:transparent}
+.visit input,.visit select{width:100%;background:var(--surface2);border:1px solid var(--line);border-radius:var(--r3);padding:8px 10px;font-size:13.5px;min-width:0}
+.visit input:focus,.visit select:focus{outline:none;border-color:var(--acc)}
+.hhead{display:grid;grid-template-columns:1fr 46px 46px 46px;gap:4px;padding:8px 14px 6px;font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);align-items:end}
+.hhead span:not(:first-child){text-align:center}
+.house{display:grid;grid-template-columns:1fr 46px 46px 46px;gap:4px;align-items:center;padding:4px 14px;border-top:1px solid var(--line)}
+.house .nm{font-size:16px;font-weight:800;letter-spacing:-.01em;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:8px 0}
+.house .nm small{display:block;font-size:10.5px;font-weight:600;color:var(--muted);letter-spacing:0}
+.house.done{background:var(--acc-soft)}
+.house.done .nm{color:var(--ink)}
+.box{width:40px;height:40px;margin:0 auto;border-radius:11px;border:1.5px solid var(--line2);background:var(--surface);display:grid;place-items:center;transition:transform .1s}
+.box:active{transform:scale(.9)}
+.box svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;opacity:0}
+.box[aria-checked="true"]{background:var(--acc);border-color:var(--acc)}
+.box[aria-checked="true"] svg{opacity:1}
+.box[data-col="2"][aria-checked="true"]{background:#2B8F6E;border-color:#2B8F6E}
+.box[data-col="3"][aria-checked="true"]{background:#4CA783;border-color:#4CA783}
+.house.pending .box[aria-checked="false"]{border-style:dashed}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:10px 14px 4px}
+.chips::-webkit-scrollbar{display:none}
+.chip{white-space:nowrap;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:700;background:var(--surface2);color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--text);border-color:var(--text);color:var(--bg)}
+.cfoot{padding:12px 14px;border-top:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--surface2);border-radius:999px;padding:10px 16px;font-size:13.5px;font-weight:700;display:inline-flex;align-items:center;gap:7px}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--acc);border-color:var(--acc);color:var(--acc-t)}
+.btn.danger{color:var(--red);border-color:var(--red-soft);background:var(--red-soft)}
+.house.edit{grid-template-columns:1fr 44px 44px}
+.house .ed{width:40px;height:40px;margin:0 auto;border-radius:11px;border:1.5px solid var(--line);background:var(--surface);display:grid;place-items:center}
+.house .ed svg{width:18px;height:18px;stroke:var(--muted);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.house .ed.del{background:var(--red-soft);border-color:transparent}
+.house .ed.del svg{stroke:var(--red)}
+.house .nm .tagx{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--acc);background:var(--acc-soft);border-radius:99px;padding:2px 6px;margin-left:6px;vertical-align:middle}
+.hhead.edit{grid-template-columns:1fr 44px 44px}
+.modal .f{display:block;margin:0 0 12px}
+.modal .f span{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px}
+.modal .f input{width:100%;background:var(--surface2);border:1px solid var(--line);border-radius:var(--r3);padding:11px 12px;font-size:16px;font-weight:700}
+.addrow{display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--line)}
+.addrow input{flex:1;min-width:0;background:var(--surface2);border:1px solid var(--line);border-radius:999px;padding:9px 14px;font-size:14px}
+.note{font-size:11.5px;color:var(--faint);text-align:center;margin:12px 0 0}
+
+
+/* ---------- ajustes (gaveta) ---------- */
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--surface);border-radius:24px 24px 0 0;box-shadow:var(--sh-l);transform:translateY(110%);transition:transform .3s cubic-bezier(.2,.8,.3,1);padding:10px 18px calc(18px + env(safe-area-inset-bottom,0px));max-height:88vh;overflow:auto}
+.sheet.open{transform:none}
+.grip{width:42px;height:5px;border-radius:99px;background:var(--line2);margin:0 auto 12px}
+.sheet h3{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:14px 0 8px}
+.switch{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px;font-weight:600}
+.switch small{display:block;font-size:11.5px;color:var(--muted);font-weight:500}
+.sw{width:46px;height:27px;border-radius:99px;background:var(--line2);position:relative;flex:none;transition:.2s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.sw[aria-checked="true"]{background:var(--acc)}
+.sw[aria-checked="true"]::after{left:22px}
+.scrim{position:fixed;inset:0;z-index:45;background:rgba(6,12,10,.45);display:none}
+.scrim.on{display:block}
+.codebox{display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--line);border-radius:var(--r2);padding:10px 12px;margin-top:4px}
+.codebox b{font-family:var(--font);font-size:18px;letter-spacing:.14em;flex:1}
+.codebox small{display:block;font-size:11px;color:var(--muted);letter-spacing:0;font-weight:600}
+
+/* ---------- modal / toast ---------- */
+.modal{position:fixed;inset:0;z-index:120;display:none;align-items:flex-end;justify-content:center;background:rgba(6,12,10,.5);backdrop-filter:blur(2px)}
+.modal.open{display:flex}
+.modal .box2{background:var(--surface);width:100%;max-width:520px;border-radius:24px 24px 0 0;padding:10px 18px calc(18px + env(safe-area-inset-bottom,0px));animation:up .2s ease}
+@keyframes up{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
+@media(min-width:560px){.modal{align-items:center}.modal .box2{border-radius:24px;padding-top:18px}}
+.modal p{font-size:15px;font-weight:700;margin:6px 0 14px;line-height:1.4}
+.modal .acts{display:flex;flex-direction:column;gap:8px}
+.modal .acts .btn{width:100%;justify-content:center;padding:13px}
+.toast{position:fixed;left:50%;top:calc(74px + env(safe-area-inset-top,0px));transform:translateX(-50%) translateY(-8px);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:13px;font-weight:700;z-index:130;opacity:0;pointer-events:none;transition:.22s;white-space:nowrap;max-width:calc(100vw - 32px);overflow:hidden;text-overflow:ellipsis}
+.toast.show{opacity:1;transform:translateX(-50%)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* tela do código */
+.gate{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px}
+.gate .box{width:100%;max-width:380px;text-align:center;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:26px 22px;box-shadow:var(--sh-l)}
+.gate h1{font-family:var(--hand);font-weight:700;color:var(--ink);font-size:42px;margin:0 0 4px;line-height:1}
+.gate input{width:100%;background:var(--surface2);border:1px solid var(--line);border-radius:var(--r3);padding:13px 12px;font-size:20px;font-weight:800;letter-spacing:.14em;text-align:center;text-transform:uppercase;margin-top:14px}
+.gate input:focus{outline:none;border-color:var(--acc)}
+.gate .err{color:var(--red);font-size:12.5px;margin:10px 0 0;min-height:18px}
+.gate .btn{width:100%;justify-content:center;padding:13px;margin-top:12px}
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+<section class="gate" id="gate">
+  <div class="box">
+    <h1>Cartões</h1>
+    <p class="note" style="margin:0">Marque as casas faladas em cada quadra. Funciona sem internet e sem login.</p>
+    <input id="codeIn" type="text" placeholder="CÓDIGO DA CONGREGAÇÃO" autocomplete="off" autocapitalize="characters">
+    <div class="err" id="codeErr"></div>
+    <button class="btn primary" id="codeGo">Entrar</button>
+    <p class="note">Peça o código a quem administra o app Nosso Território.</p>
+  </div>
+</section>
+<div class="top" id="top">
+  <div class="bar" id="barHome">
+    <span class="logo">T</span>
+    <div class="sfield"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg><input id="q" type="text" placeholder="Território ou quadra" autocomplete="off"></div>
+    <button class="iconbtn" id="btnCfg" aria-label="Ajustes"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></button>
+  </div>
+  <div class="bar hide" id="barSub">
+    <button class="iconbtn" id="btnBack" aria-label="Voltar"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <div class="ttl"><b id="tTitle">—</b><small id="tSub">—</small></div>
+    <button class="iconbtn" id="btnCfg2" aria-label="Ajustes"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg></button>
+    <button class="iconbtn hide" id="btnShare" aria-label="Compartilhar cartão"><svg viewBox="0 0 24 24"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M12 15V3M7 8l5-5 5 5"/></svg></button>
+  </div>
+  <div class="sync" id="sync" data-s="ok"><i></i><span id="syncT">Sincronizado · Congregação Sul de Marialva</span></div>
+</div>
+
+<section class="screen on" id="scHome"><div class="wrap">
+  <div class="eyebrow">Cartões de casas</div><h1>Territórios</h1>
+  <div id="list"></div>
+  <p class="note">Toque num território para ver as quadras. Suas marcações ficam no aparelho e sobem sozinhas quando houver internet. Concluir o território é feito no app principal.</p>
+</div></section>
+
+<section class="screen" id="scTerr"><div class="wrap">
+  <div class="sumbar" id="tsum"></div>
+  <div class="qgrid" id="qgrid"></div>
+  <p class="note">Toque na quadra (ou na letra A / B) para abrir o cartão.</p>
+</div></section>
+
+<section class="screen" id="scCard"><div class="wrap">
+  <div class="card">
+    <div class="ch"><div class="q" id="cQ"><small>Quadra</small>2A</div><div class="m"><b id="cName">—</b><small id="cMapa">Mapa —</small></div></div>
+    <div class="visits" id="visits"></div>
+    <div class="chips"><button class="chip" data-f="all" aria-pressed="true">Todas as casas</button><button class="chip" data-f="pend" aria-pressed="false">Só as que faltam</button><button class="chip" data-f="done" aria-pressed="false">Já faladas</button><button class="chip" id="chipEdit" aria-pressed="false">✎ Editar casas</button></div>
+    <div class="hhead"><span id="hCount">Nº da casa</span><span>1ª</span><span>2ª</span><span>3ª</span></div>
+    <div id="hlist"></div>
+    <div class="addrow"><input id="addIn" type="text" inputmode="numeric" placeholder="Adicionar casa (nº, S/N, comércio…)"><button class="btn" id="addBtn">Adicionar</button></div>
+    <div class="cfoot"><button class="btn danger" id="btnZero">Zerar cartão</button><button class="btn" id="btnDoneCard" style="margin-left:auto">Próxima quadra →</button></div>
+  </div>
+  <p class="note" id="cLast">—</p>
+</div></section>
+
+<div class="scrim" id="scrim"></div>
+<section class="sheet" id="cfg">
+  <div class="grip"></div>
+  <h3>Congregação</h3>
+  <div class="codebox"><span><b id="cfgCode">—</b><small id="cfgCong">código informado uma vez; vem do app principal</small></span><button class="btn" id="btnCodeChange">Trocar</button></div>
+  <h3>Conexão</h3>
+  <p style="margin:0;font-size:13px;color:var(--muted)">As marcações ficam no aparelho e são enviadas sozinhas assim que houver internet. Não é preciso abrir o app para isso.</p>
+  <h3>Aparelho</h3>
+  <p style="margin:0;font-size:13px;color:var(--muted)" id="devInfo">—</p>
+  <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn" id="btnSyncNow">Sincronizar agora</button><button class="btn" id="btnCfgClose">Fechar</button></div>
+</section>
+
+<div class="modal" id="editmodal"><div class="box2"><div class="grip"></div><p id="edT">Editar casa</p><label class="f"><span>Número ou descrição da casa</span><input id="edIn" type="text" inputmode="numeric" autocomplete="off"></label><div class="acts"><button class="btn primary" id="edSave">Salvar</button><button class="btn" id="edCancel">Cancelar</button></div></div></div>
+<div class="modal" id="askmodal"><div class="box2"><div class="grip"></div><p id="askMsg"></p><div class="acts" id="askActs"></div></div></div>
+<div class="toast" id="toast"></div>
+
+
+<script>
+
+'use strict';
+const $=id=>document.getElementById(id);
+const pad2=k=>String(k).padStart(2,'0');
+const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const today=()=>iso(new Date());
+const br=d=>d?d.split('-').reverse().join('/'):'—';
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const PERIODOS=['Manhã','Tarde','Noite'];
+let tT=null; function toast(m){ const e=$('toast'); e.textContent=m; e.classList.add('show'); clearTimeout(tT); tT=setTimeout(()=>e.classList.remove('show'),2200); }
+
+/* ---------- Firebase (anônimo) ---------- */
+const firebaseConfig={apiKey:"AIzaSyBaV6MtnGA3O0MnAD2ahQtNrpdsrcLnS_Y",authDomain:"nosso-territorio-d1b6b.firebaseapp.com",projectId:"nosso-territorio-d1b6b",storageBucket:"nosso-territorio-d1b6b.firebasestorage.app",messagingSenderId:"702151659736",appId:"1:702151659736:web:60683540519543d54207ad"};
+firebase.initializeApp(firebaseConfig);
+const auth=firebase.auth(), dbFS=firebase.firestore();
+const FP=firebase.firestore.FieldPath, FV=firebase.firestore.FieldValue;
+dbFS.enablePersistence({synchronizeTabs:true}).catch(()=>{});
+let CFG=null; try{ CFG=JSON.parse(localStorage.getItem('cartoes_cfg')||'null'); }catch(e){}
+let congRef=null, NOMES={}, CONG='', CARDS={}, unsubs=[];
+
+/* ---------- navegação ---------- */
+const NAV={stack:[],ignore:0,backs:0,queue:0};
+function navPush(close){ NAV.stack.push(close); if(NAV.backs>0) NAV.queue++; else history.pushState({n:1},''); }
+function navPop(){ NAV.stack.pop(); if(history.state&&history.state.n>0&&NAV.backs===0){ NAV.ignore++; NAV.backs++; history.back(); } else if(NAV.queue>0){ NAV.queue--; } }
+function navBack(){ const top=NAV.stack[NAV.stack.length-1]; if(top){ NAV.stack.pop(); if(history.state&&history.state.n>0&&NAV.backs===0){ NAV.ignore++; NAV.backs++; history.back(); } else if(NAV.queue>0){ NAV.queue--; } top(); } }
+history.replaceState({n:-1},''); history.pushState({n:0},'');
+addEventListener('popstate',()=>{
+  if(NAV.ignore){ NAV.ignore--; NAV.backs=Math.max(0,NAV.backs-1); while(NAV.queue>0){ NAV.queue--; history.pushState({n:1},''); } return; }
+  const c=NAV.stack.pop();
+  if(!c||!history.state||history.state.n<0){ history.pushState({n:0},''); if(c) c(); return; }
+  c();
+});
+let scr='scHome', curK=null, curQ=null, hf='all', editMode=false;
+function show(id){ ['scHome','scTerr','scCard'].forEach(s=>$(s).classList.toggle('on',s===id)); scr=id; $('barHome').classList.toggle('hide',id!=='scHome'); $('barSub').classList.toggle('hide',id==='scHome'); $('btnShare').classList.toggle('hide',id!=='scCard'); scrollTo({top:0}); }
+$('btnBack').addEventListener('click',navBack);
+
+/* ---------- código da congregação ---------- */
+$('codeGo').addEventListener('click',async()=>{ const code=$('codeIn').value.trim().toUpperCase().replace(/\s+/g,''); if(!code){ $('codeErr').textContent='Digite o código.'; return; } $('codeGo').disabled=true; $('codeErr').textContent='';
+  try{ if(!auth.currentUser) await auth.signInAnonymously(); const d=await dbFS.collection('codigos').doc(code).get(); if(!d.exists){ $('codeErr').textContent='Código não encontrado. Confira com quem administra o app principal.'; $('codeGo').disabled=false; return; } CFG={code,cong:d.data().cong}; localStorage.setItem('cartoes_cfg',JSON.stringify(CFG)); start(); }
+  catch(e){ $('codeErr').textContent=navigator.onLine?'Não foi possível validar o código. Tente de novo.':'Para o primeiro acesso é preciso internet.'; } $('codeGo').disabled=false; });
+$('codeIn').addEventListener('keydown',e=>{ if(e.key==='Enter') $('codeGo').click(); });
+$('btnCodeChange').addEventListener('click',async()=>{ if(await ask('Trocar o código? As marcações já enviadas continuam na nuvem; as que ainda não subiram serão enviadas quando houver internet.',[['Trocar','primary'],['Cancelar','']])!==0) return; localStorage.removeItem('cartoes_cfg'); location.reload(); });
+auth.onAuthStateChanged(u=>{ if(!u){ auth.signInAnonymously().catch(()=>{}); return; } if(CFG&&!congRef) start(); });
+if(!CFG){ $('gate').classList.remove('hide'); }
+
+/* ---------- dados ---------- */
+function start(){ if(!CFG) return; $('gate').classList.add('hide'); congRef=dbFS.collection('congregacoes').doc(CFG.cong); $('cfgCode').textContent=CFG.code;
+  unsubs.forEach(u=>u()); unsubs=[];
+  unsubs.push(congRef.collection('publico').doc('dados').onSnapshot(s=>{ if(!s.exists) return; const d=s.data(); NOMES=d.nomes||{}; CONG=d.cong||''; $('cfgCong').textContent=CONG?CONG+' · código informado uma vez':'código informado uma vez'; setSync(); render(); },()=>setSync()));
+  unsubs.push(congRef.collection('cartoes').onSnapshot(s=>{ CARDS={}; s.forEach(d=>{ CARDS[d.id]=Object.assign({id:d.id},d.data()); }); render(); setSync(); },()=>setSync()));
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+  renderList(); }
+const KEYS=()=>Object.keys(NOMES).sort((a,b)=>+a-+b);
+function nome(k){ return (NOMES[k]&&NOMES[k].n)||('Território '+pad2(k)); }
+function areaOf(k){ return (NOMES[k]&&NOMES[k].a)||'Urbano'; }
+function qkey(id){ const m=String(id).match(/^(\d+)([A-Za-z]?)$/); return [m?+m[1]:999,m?m[2]:String(id)]; }
+function cardsOf(k){ return Object.values(CARDS).filter(c=>String(c.mapa)===String(+k)).sort((a,b)=>{ const [x,y]=qkey(a.quadra),[z,w]=qkey(b.quadra); return x-z||y.localeCompare(w); }); }
+function houses(c){ return [...(c.casas||[]).filter(x=>!(c.del||[]).includes(x)).map(x=>(c.ren||{})[x]||x),...(c.extra||[])]; }
+function marks(c,h){ return (c.c||{})[h]||[0,0,0]; }
+function talked(c,h){ return marks(c,h).some(Boolean); }
+function progress(c){ const hs=houses(c); return {n:hs.length,d:hs.filter(h=>talked(c,h)).length}; }
+function pLevel(c){ const {n,d}=progress(c); return !n?'empty':d===0?'none':d===n?'all':'some'; }
+function tProgress(k){ let n=0,d=0; cardsOf(k).forEach(c=>{ const p=progress(c); n+=p.n; d+=p.d; }); return {n,d}; }
+function render(){ if(scr==='scHome') renderList(); else if(scr==='scTerr') renderTerr(); else if(scr==='scCard'&&CARDS[curQ]) renderCard(); else if(scr==='scCard'){ toast('Este cartão foi removido no app principal'); navBack(); } }
+
+/* ---------- sincronização ---------- */
+let pending=0;
+function setSync(){ const el=$('sync'); const off=!navigator.onLine; if(off){ el.dataset.s='off'; $('syncT').textContent=pending?`Sem internet · ${pending} marcaç${pending>1?'ões':'ão'} guardada${pending>1?'s':''} no aparelho`:'Sem internet · salvo no aparelho'; return; } if(pending){ el.dataset.s='busy'; $('syncT').textContent=`Enviando ${pending} marcaç${pending>1?'ões':'ão'}…`; return; } el.dataset.s='ok'; $('syncT').textContent='Sincronizado'+(CONG?' · '+CONG:''); }
+addEventListener('online',setSync); addEventListener('offline',setSync);
+function track(p){ pending++; setSync(); p.then(()=>{ pending=Math.max(0,pending-1); setSync(); }).catch(()=>{ pending=Math.max(0,pending-1); setSync(); toast('Uma marcação foi recusada pelo servidor'); }); }
+function cardRef(id){ return congRef.collection('cartoes').doc(id); }
+$('btnSyncNow').addEventListener('click',()=>{ if(!navigator.onLine){ toast('Sem internet agora. As marcações já estão guardadas.'); return; } if(!pending){ toast('Tudo sincronizado'); return; } toast('Enviando…'); });
+
+/* ---------- tela 1: territórios ---------- */
+function renderList(){ const term=$('q').value.trim().toLowerCase(); const ks=KEYS(); const groups=[['Urbano',k=>areaOf(k)==='Urbano'],['Rural',k=>areaOf(k)==='Rural'],['Distritos',k=>!['Urbano','Rural'].includes(areaOf(k))]];
+  $('list').innerHTML=ks.length?(groups.map(([label,f])=>{ const g=ks.filter(f).filter(k=>!term||(pad2(k)+' '+k+' '+nome(k)+' '+cardsOf(k).map(x=>x.quadra).join(' ')).toLowerCase().includes(term)); if(!g.length) return ''; return `<div class="gsep"><h2>${label}</h2><div class="l"></div><div class="c">${g.length}</div></div><div class="tlist">${g.map(k=>{ const p=tProgress(k),qs=cardsOf(k); const lvl=!p.n?'empty':p.d===0?'none':p.d===p.n?'all':'some'; return `<button class="trow" data-p="${lvl}" data-k="${k}"><span class="num">${pad2(k)}</span><span class="bd"><b>${esc(nome(k))}</b><small>${qs.length?`${qs.length} quadra${qs.length>1?'s':''} · ${p.n?`${p.d} de ${p.n} casas faladas`:'casas ainda não cadastradas'}`:'sem cartões'}</small>${p.n?`<span class="track"><i style="width:${p.d/p.n*100}%"></i></span>`:''}</span><span class="r">${p.n?Math.round(p.d/p.n*100)+'%':''}</span></button>`; }).join('')}</div>`; }).join('')||'<div class="empty">Nenhum território encontrado.</div>'):'<div class="empty">Aguardando os dados da congregação…<br>Na primeira vez é preciso internet.</div>';
+  $('list').querySelectorAll('.trow').forEach(b=>b.addEventListener('click',()=>openTerr(b.dataset.k))); $('devInfo').textContent=`${ks.length} territórios · ${Object.keys(CARDS).length} cartões · ${ks.reduce((a,k)=>a+tProgress(k).n,0)} casas guardadas neste aparelho.`; }
+$('q').addEventListener('input',renderList);
+
+/* ---------- tela 2: quadras ---------- */
+function openTerr(k,fromNav){ curK=k; if(!fromNav) navPush(()=>{ show('scHome'); renderList(); }); $('tTitle').textContent=`${pad2(k)} · ${nome(k)}`; $('tSub').textContent=areaOf(k); renderTerr(); show('scTerr'); }
+function renderTerr(){ const k=curK,p=tProgress(k),qs=cardsOf(k); $('tsum').innerHTML=`<div class="big">${p.n?Math.round(p.d/p.n*100):0}%</div><div class="tx"><b>${p.d} de ${p.n}</b> casas faladas em ${qs.length} quadra${qs.length!==1?'s':''}<div class="track"><i style="width:${p.n?p.d/p.n*100:0}%"></i></div></div>`;
+  const groups={}; qs.forEach(c=>{ const m=String(c.quadra).match(/^(\d+)([A-Za-z]?)$/); const n=m?m[1]:c.quadra,L=m?m[2]:''; (groups[n]=groups[n]||[]).push({id:c.id,L,c}); }); const order=Object.keys(groups).sort((a,b)=>(+a||999)-(+b||999));
+  $('qgrid').innerHTML=order.length?order.map(n=>{ const g=groups[n]; const multi=g.length>1||g[0].L; const btn=it=>{ const pr=progress(it.c); return `<button data-q="${it.id}" data-p="${pLevel(it.c)}">${it.L||'Abrir cartão'}<small>${pr.n?`${pr.d}/${pr.n}`:'sem casas'}</small></button>`; }; return `<div class="qcard"><div class="qn"><small>Quadra</small>${esc(n)}</div>${multi?`<div class="letters">${g.map(btn).join('')}</div>`:`<button class="single" data-q="${g[0].id}" data-p="${pLevel(g[0].c)}">Abrir cartão <small>${progress(g[0].c).n?progress(g[0].c).d+'/'+progress(g[0].c).n:'sem casas'}</small></button>`}</div>`; }).join(''):'<div class="empty">Este território ainda não tem cartões de quadra.</div>';
+  $('qgrid').querySelectorAll('[data-q]').forEach(b=>b.addEventListener('click',()=>openCard(b.dataset.q))); }
+
+/* ---------- tela 3: cartão ---------- */
+function openCard(id,fromNav){ const c=CARDS[id]; if(!c) return; curQ=id; curK=String(c.mapa); hf='all'; editMode=false; $('chipEdit').setAttribute('aria-pressed','false'); if(!fromNav) navPush(()=>{ renderTerr(); show('scTerr'); $('tTitle').textContent=`${pad2(curK)} · ${nome(curK)}`; $('tSub').textContent=areaOf(curK); });
+  $('tTitle').textContent=`Quadra ${c.quadra} · ${nome(curK)}`; $('tSub').textContent=`Mapa ${pad2(curK)} · ${areaOf(curK)}`; $('cQ').innerHTML=`<small>Quadra</small>${esc(c.quadra)}`; $('cName').textContent=nome(curK); $('cMapa').textContent='Mapa '+pad2(curK); document.querySelectorAll('.chips .chip[data-f]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.f==='all'))); renderCard(); show('scCard'); }
+function renderCard(){ const c=CARDS[curQ]; if(!c) return; const v=c.v||[{d:'',p:''},{d:'',p:''},{d:'',p:''}];
+  $('visits').innerHTML=v.map((x,i)=>`<div class="visit"><span class="n" data-on="${x.d?1:0}">${i+1}ª</span><input type="date" data-v="${i}" value="${x.d||''}" aria-label="Data da ${i+1}ª visita"><select data-vp="${i}" aria-label="Período da ${i+1}ª visita"><option value="">Período</option>${PERIODOS.map(p=>`<option ${x.p===p?'selected':''}>${p}</option>`).join('')}</select></div>`).join('');
+  $('visits').querySelectorAll('input').forEach(i=>i.addEventListener('change',e=>{ const vv=JSON.parse(JSON.stringify(v)); vv[+e.target.dataset.v].d=e.target.value; c.v=vv; c.ts=Date.now(); track(cardRef(curQ).update({v:vv,ts:c.ts})); renderCard(); }));
+  $('visits').querySelectorAll('select').forEach(i=>i.addEventListener('change',e=>{ const vv=JSON.parse(JSON.stringify(v)); vv[+e.target.dataset.vp].p=e.target.value; c.v=vv; c.ts=Date.now(); track(cardRef(curQ).update({v:vv,ts:c.ts})); }));
+  const hs=houses(c),p=progress(c);
+  const hh=document.querySelector('.hhead'); hh.classList.toggle('edit',editMode); hh.innerHTML=editMode?`<span>Lápis corrige · ✕ remove</span><span>✎</span><span>✕</span>`:`<span>${p.d} de ${p.n} faladas</span><span>1ª</span><span>2ª</span><span>3ª</span>`;
+  const shown=hs.filter(h=>editMode||hf==='all'||(hf==='pend'?!talked(c,h):talked(c,h)));
+  $('hlist').innerHTML=hs.length?(shown.length?shown.map(h=>{ const m=marks(c,h); if(editMode) return `<div class="house edit"><span class="nm">${esc(h)}${(c.extra||[]).includes(h)?'<span class="tagx">adicionada</span>':''}</span><button class="ed" data-edit="${esc(h)}" aria-label="Editar casa ${esc(h)}"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><button class="ed del" data-del="${esc(h)}" aria-label="Remover casa ${esc(h)}"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>`; return `<div class="house ${m.some(Boolean)?'done':'pending'}"><span class="nm">${esc(h)}</span>${[0,1,2].map(j=>`<button class="box" data-col="${j+1}" data-c="${esc(h)}" data-j="${j}" role="checkbox" aria-checked="${m[j]?'true':'false'}" aria-label="Casa ${esc(h)}, ${j+1}ª visita"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button>`).join('')}</div>`; }).join(''):'<div class="empty">Nada aqui com este filtro.</div>'):'<div class="empty">Este cartão ainda não tem casas cadastradas.<br>Use "Adicionar casa" abaixo, na ordem da rua.</div>';
+  $('hlist').querySelectorAll('.box').forEach(b=>b.addEventListener('click',()=>{ const h=b.dataset.c,j=+b.dataset.j; const m=marks(c,h).slice(); m[j]=m[j]?0:1; c.c=c.c||{}; c.c[h]=m; c.ts=Date.now(); const args=[new FP('c',h),m,'ts',c.ts]; if(m[j]&&!(v[j]||{}).d){ const vv=JSON.parse(JSON.stringify(v)); vv[j].d=today(); c.v=vv; args.push('v',vv); } track(cardRef(curQ).update(...args)); renderCard(); }));
+  $('hlist').querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click',()=>editHouse(b.dataset.edit)));
+  $('hlist').querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',async()=>{ const h=b.dataset.del; const m=talked(c,h); if(await ask(`Remover a casa ${h} deste cartão?${m?' As marcações dela serão apagadas.':''} Tem certeza?`,[['Sim, remover','danger'],['Cancelar','']])!==0) return; removeHouse(c,h); renderCard(); toast(`Casa ${h} removida`); }));
+  $('cLast').textContent=c.ts?`Última marcação neste cartão: ${new Date(c.ts).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}`:'Nenhuma marcação ainda.'; }
+function origOf(c,n){ return Object.keys(c.ren||{}).find(o=>c.ren[o]===n)||n; }
+function renameHouse(c,o,n){ const args=[]; c.ts=Date.now(); if((c.extra||[]).includes(o)){ c.extra=c.extra.map(x=>x===o?n:x); args.push('extra',c.extra); } else { const orig=origOf(c,o); c.ren=c.ren||{}; c.ren[orig]=n; args.push(new FP('ren',orig),n); } if(c.c&&c.c[o]){ c.c[n]=c.c[o]; delete c.c[o]; args.push(new FP('c',n),c.c[n],new FP('c',o),FV.delete()); } args.push('ts',c.ts); track(cardRef(c.id).update(...args)); }
+function removeHouse(c,n){ const args=[]; c.ts=Date.now(); if((c.extra||[]).includes(n)){ c.extra=c.extra.filter(x=>x!==n); args.push('extra',c.extra); } else { const orig=origOf(c,n); c.del=[...(c.del||[]),orig]; args.push('del',FV.arrayUnion(orig)); if(c.ren&&c.ren[orig]){ delete c.ren[orig]; args.push(new FP('ren',orig),FV.delete()); } } if(c.c&&c.c[n]){ delete c.c[n]; args.push(new FP('c',n),FV.delete()); } args.push('ts',c.ts); track(cardRef(c.id).update(...args)); }
+$('chipEdit').addEventListener('click',()=>{ editMode=!editMode; $('chipEdit').setAttribute('aria-pressed',String(editMode)); renderCard(); });
+let edTarget=null;
+function editHouse(h){ edTarget=h; $('edT').textContent=`Corrigir a casa ${h}`; $('edIn').value=h; $('editmodal').classList.add('open'); navPush(()=>closeEdit(true)); setTimeout(()=>{ $('edIn').focus(); $('edIn').select(); },50); }
+function closeEdit(fromNav){ if(!$('editmodal').classList.contains('open')) return; $('editmodal').classList.remove('open'); if(!fromNav) navPop(); }
+$('edCancel').addEventListener('click',()=>closeEdit(false)); $('editmodal').addEventListener('click',e=>{ if(e.target===$('editmodal')) closeEdit(false); });
+$('edSave').addEventListener('click',async()=>{ const c=CARDS[curQ]; const v=$('edIn').value.trim(),old=edTarget; if(!v||v===old){ closeEdit(false); return; } if(houses(c).includes(v)){ toast('Já existe uma casa com esse número no cartão'); return; } closeEdit(false); if(await ask(`Alterar a casa ${old} para ${v}? As marcações passam para o novo número. Tem certeza?`,[['Sim, alterar','primary'],['Cancelar','']])!==0) return; renameHouse(c,old,v); renderCard(); toast(`Casa ${old} alterada para ${v}`); });
+$('edIn').addEventListener('keydown',e=>{ if(e.key==='Enter') $('edSave').click(); });
+document.querySelector('.chips').addEventListener('click',e=>{ const b=e.target.closest('.chip'); if(!b||!b.dataset.f) return; hf=b.dataset.f; document.querySelectorAll('.chips .chip[data-f]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); renderCard(); });
+$('addBtn').addEventListener('click',()=>{ const c=CARDS[curQ]; const v=$('addIn').value.trim(); if(!v) return; if(houses(c).includes(v)){ toast('Essa casa já está no cartão'); return; } c.extra=[...(c.extra||[]),v]; c.ts=Date.now(); track(cardRef(curQ).update({extra:FV.arrayUnion(v),ts:c.ts})); $('addIn').value=''; renderCard(); toast('Casa adicionada'); });
+$('addIn').addEventListener('keydown',e=>{ if(e.key==='Enter') $('addBtn').click(); });
+$('btnZero').addEventListener('click',async()=>{ const c=CARDS[curQ],p=progress(c); if(await ask(`Zerar o cartão da quadra ${c.quadra}? ${p.d?`As ${p.d} casas marcadas e as datas das visitas serão apagadas.`:'As datas das visitas serão apagadas.'} Tem certeza?`,[['Sim, zerar o cartão','danger'],['Cancelar','']])!==0) return; c.c={}; c.v=[{d:'',p:''},{d:'',p:''},{d:'',p:''}]; c.ts=Date.now(); track(cardRef(curQ).update({c:{},v:c.v,ts:c.ts})); renderCard(); toast('Cartão zerado'); });
+$('btnDoneCard').addEventListener('click',()=>{ const qs=cardsOf(curK); const i=qs.findIndex(x=>x.id===curQ); if(qs.length<2){ toast('Este território só tem esta quadra'); return; } const nx=qs[(i+1)%qs.length]; openCard(nx.id,true); toast(`Quadra ${nx.quadra}`); });
+$('btnShare').addEventListener('click',()=>{ const c=CARDS[curQ],p=progress(c),hs=houses(c),falta=hs.filter(h=>!talked(c,h)); const txt=`*MAPA ${pad2(curK)} · ${nome(curK)} · QUADRA ${c.quadra}*\n${p.d} de ${p.n} casas faladas${(c.v||[]).filter(x=>x.d).map((x,i)=>`\n${i+1}ª visita: ${br(x.d)}${x.p?' · '+x.p:''}`).join('')}${falta.length?`\nFaltam: ${falta.join(', ')}`:'\nQuadra completa.'}`; if(navigator.share){ navigator.share({text:txt}).catch(()=>{}); return; } window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank','noopener'); });
+
+/* ---------- ajustes ---------- */
+function openCfg(){ $('cfg').classList.add('open'); $('scrim').classList.add('on'); navPush(()=>{ $('cfg').classList.remove('open'); $('scrim').classList.remove('on'); }); }
+$('btnCfg').addEventListener('click',openCfg); $('btnCfg2').addEventListener('click',openCfg); $('btnCfgClose').addEventListener('click',navBack); $('scrim').addEventListener('click',navBack);
+
+/* ---------- modal / toast ---------- */
+let askRes=null;
+function ask(msg,opts){ return new Promise(res=>{ $('askMsg').textContent=msg; $('askActs').innerHTML=opts.map((o,i)=>`<button class="btn ${o[1]}" data-i="${i}">${o[0]}</button>`).join(''); $('askmodal').classList.add('open'); askRes=res; navPush(()=>closeAsk(-1,true)); }); }
+function closeAsk(v,fromNav){ if(!$('askmodal').classList.contains('open')) return; $('askmodal').classList.remove('open'); if(!fromNav) navPop(); const r=askRes; askRes=null; if(r) r(v); }
+$('askActs').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; closeAsk(+b.dataset.i,false); });
+$('askmodal').addEventListener('click',e=>{ if(e.target===$('askmodal')) closeAsk(-1,false); });
+setSync(); renderList();
+
+</script>
+</body>
+</html>

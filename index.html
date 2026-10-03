@@ -61,7 +61,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-of
 @keyframes pulse{50%{opacity:.3}}
 
 /* ---------- telas ---------- */
-.screen{position:fixed;left:0;right:0;top:0;bottom:0;overflow-y:auto;padding:calc(76px + env(safe-area-inset-top,0px)) 16px calc(24px + env(safe-area-inset-bottom,0px));display:none;animation:fade .2s ease;background:var(--bg)}
+.screen{position:fixed;left:0;right:0;top:0;bottom:0;overflow-y:auto;padding:calc(var(--toph,88px) + 12px) 16px calc(24px + env(safe-area-inset-bottom,0px));display:none;animation:fade .2s ease;background:var(--bg)}
 .screen.on{display:block}
 @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .wrap{max-width:720px;margin:0 auto}
@@ -315,7 +315,9 @@ addEventListener('popstate',()=>{
   c();
 });
 let scr='scHome', curK=null, curQ=null, hf='all', editMode=false;
-function show(id){ ['scHome','scTerr','scCard'].forEach(s=>$(s).classList.toggle('on',s===id)); scr=id; $('barHome').classList.toggle('hide',id!=='scHome'); $('barSub').classList.toggle('hide',id==='scHome'); $('btnShare').classList.toggle('hide',id!=='scCard'); scrollTo({top:0}); }
+function fitTop(){ document.documentElement.style.setProperty('--toph',$('top').offsetHeight+'px'); }
+try{ new ResizeObserver(fitTop).observe($('top')); }catch(e){ addEventListener('resize',fitTop); } fitTop();
+function show(id){ ['scHome','scTerr','scCard'].forEach(s=>$(s).classList.toggle('on',s===id)); scr=id; $('barHome').classList.toggle('hide',id!=='scHome'); $('barSub').classList.toggle('hide',id==='scHome'); $('btnShare').classList.toggle('hide',id!=='scCard'); fitTop(); scrollTo({top:0}); }
 $('btnBack').addEventListener('click',navBack);
 
 /* ---------- ligação automática: config/padrao diz qual congregação usar ---------- */
@@ -326,7 +328,7 @@ async function connect(){ $('gateMsg').textContent='Conectando à congregação�
 function explainErr(e){ const code=(e&&e.code)||'', msg=(e&&e.message)||''; let t;
   if(msg==='sem-padrao') t='A congregação ainda não foi registrada. Abra o app Nosso Território (o principal) uma vez, logado: ele registra sozinho.';
   else if(/admin-restricted|operation-not-allowed/.test(code)) t='O login anônimo está desativado no Firebase. Em Authentication → Sign-in method, ative "Anônimo".';
-  else if(/permission|unauth/.test(code)) t='O servidor recusou a leitura. Publique as regras do Firestore (arquivo firestore.rules) no projeto nosso-territorio-d1b6b.';
+  else if(/permission|unauth/.test(code)) t='O servidor recusou a leitura. Publique as regras do Firestore (arquivo firestore.rules) no projeto nosso-territorio-5bc39.';
   else if(/unavailable|network/.test(code)) t='Não consegui falar com o Firebase. Confira a internet, bloqueadores/extensões ou firewall (firestore.googleapis.com).';
   else if(/not-found|failed-precondition/.test(code)) t='O banco Firestore ainda não existe neste projeto. Crie-o no console (Firestore Database → Criar banco).';
   else if(/api-key|app-not-authorized|invalid-api/.test(code)) t='A chave do Firebase foi recusada. Confira as restrições da chave de API no Google Cloud.';

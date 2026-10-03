@@ -294,7 +294,7 @@ addEventListener('error',e=>diag('Erro: '+(e.message||e)));
 if(typeof firebase==='undefined'){ $('gateMsg').textContent='Os scripts do Firebase não carregaram. Verifique a internet e abra de novo.'; throw new Error('Firebase não carregou'); }
 
 /* ---------- Firebase (anônimo) ---------- */
-const firebaseConfig={apiKey:"AIzaSyBaV6MtnGA3O0MnAD2ahQtNrpdsrcLnS_Y",authDomain:"nosso-territorio-d1b6b.firebaseapp.com",projectId:"nosso-territorio-d1b6b",storageBucket:"nosso-territorio-d1b6b.firebasestorage.app",messagingSenderId:"702151659736",appId:"1:702151659736:web:60683540519543d54207ad"};
+const firebaseConfig={apiKey:"AIzaSyAFw7ArMieWTNm6QDnOPxirD3UtwgjaT6g",authDomain:"nosso-territorio-5bc39.firebaseapp.com",projectId:"nosso-territorio-5bc39",storageBucket:"nosso-territorio-5bc39.firebasestorage.app",messagingSenderId:"869076551754",appId:"1:869076551754:web:e417b1477bad82ac5dbeb3"};
 firebase.initializeApp(firebaseConfig);
 const auth=firebase.auth(), dbFS=firebase.firestore();
 const FP=firebase.firestore.FieldPath, FV=firebase.firestore.FieldValue;

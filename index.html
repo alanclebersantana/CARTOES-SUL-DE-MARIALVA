@@ -216,10 +216,9 @@ h1{font-family:var(--hand);font-weight:700;color:var(--ink);font-size:40px;line-
   <div class="box">
     <h1>Cartões</h1>
     <p class="note" style="margin:0">Marque as casas faladas em cada quadra. Funciona sem internet e sem login.</p>
-    <input id="codeIn" type="text" placeholder="CÓDIGO DA CONGREGAÇÃO" autocomplete="off" autocapitalize="characters">
-    <div class="err" id="codeErr"></div>
-    <button class="btn primary" id="codeGo">Entrar</button>
-    <p class="note">Peça o código a quem administra o app Nosso Território.</p>
+    <div class="err" id="gateMsg" style="color:var(--muted);margin-top:16px">Conectando à congregação…</div>
+    <button class="btn primary hide" id="gateRetry">Tentar de novo</button>
+    <p class="note">Na primeira vez é preciso internet. Depois o app abre mesmo sem sinal.</p>
   </div>
 </section>
 <div class="top" id="top">
@@ -266,7 +265,7 @@ h1{font-family:var(--hand);font-weight:700;color:var(--ink);font-size:40px;line-
 <section class="sheet" id="cfg">
   <div class="grip"></div>
   <h3>Congregação</h3>
-  <div class="codebox"><span><b id="cfgCode">—</b><small id="cfgCong">código informado uma vez; vem do app principal</small></span><button class="btn" id="btnCodeChange">Trocar</button></div>
+  <div class="codebox"><span><b id="cfgCong" style="font-size:15px;letter-spacing:0">—</b><small>conectado automaticamente ao app Nosso Território</small></span><button class="btn" id="btnReconnect">Reconectar</button></div>
   <h3>Conexão</h3>
   <p style="margin:0;font-size:13px;color:var(--muted)">As marcações ficam no aparelho e são enviadas sozinhas assim que houver internet. Não é preciso abrir o app para isso.</p>
   <h3>Aparelho</h3>
@@ -290,6 +289,9 @@ const br=d=>d?d.split('-').reverse().join('/'):'—';
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const PERIODOS=['Manhã','Tarde','Noite'];
 let tT=null; function toast(m){ const e=$('toast'); e.textContent=m; e.classList.add('show'); clearTimeout(tT); tT=setTimeout(()=>e.classList.remove('show'),2200); }
+function diag(msg){ let d=$('diagbar'); if(!d){ d=document.createElement('div'); d.id='diagbar'; d.style.cssText='position:fixed;left:8px;right:8px;bottom:8px;z-index:9999;background:#3A1F1D;color:#FBE6E4;font:600 12px/1.4 system-ui,sans-serif;padding:10px 12px;border-radius:12px;max-height:40vh;overflow:auto;white-space:pre-wrap'; d.addEventListener('click',()=>d.remove()); document.body.appendChild(d); } d.textContent=msg+'\n(toque para fechar)'; }
+addEventListener('error',e=>diag('Erro: '+(e.message||e)));
+if(typeof firebase==='undefined'){ $('gateMsg').textContent='Os scripts do Firebase não carregaram. Verifique a internet e abra de novo.'; throw new Error('Firebase não carregou'); }
 
 /* ---------- Firebase (anônimo) ---------- */
 const firebaseConfig={apiKey:"AIzaSyBaV6MtnGA3O0MnAD2ahQtNrpdsrcLnS_Y",authDomain:"nosso-territorio-d1b6b.firebaseapp.com",projectId:"nosso-territorio-d1b6b",storageBucket:"nosso-territorio-d1b6b.firebasestorage.app",messagingSenderId:"702151659736",appId:"1:702151659736:web:60683540519543d54207ad"};
@@ -297,15 +299,14 @@ firebase.initializeApp(firebaseConfig);
 const auth=firebase.auth(), dbFS=firebase.firestore();
 const FP=firebase.firestore.FieldPath, FV=firebase.firestore.FieldValue;
 dbFS.enablePersistence({synchronizeTabs:true}).catch(()=>{});
-let CFG=null; try{ CFG=JSON.parse(localStorage.getItem('cartoes_cfg')||'null'); }catch(e){}
 let congRef=null, NOMES={}, CONG='', CARDS={}, unsubs=[];
 
 /* ---------- navegação ---------- */
 const NAV={stack:[],ignore:0,backs:0,queue:0};
-function navPush(close){ NAV.stack.push(close); if(NAV.backs>0) NAV.queue++; else history.pushState({n:1},''); }
+function navPush(close){ NAV.stack.push(close); if(NAV.backs>0) NAV.queue++; else { try{ history.pushState({n:1},''); }catch(e){} } }
 function navPop(){ NAV.stack.pop(); if(history.state&&history.state.n>0&&NAV.backs===0){ NAV.ignore++; NAV.backs++; history.back(); } else if(NAV.queue>0){ NAV.queue--; } }
 function navBack(){ const top=NAV.stack[NAV.stack.length-1]; if(top){ NAV.stack.pop(); if(history.state&&history.state.n>0&&NAV.backs===0){ NAV.ignore++; NAV.backs++; history.back(); } else if(NAV.queue>0){ NAV.queue--; } top(); } }
-history.replaceState({n:-1},''); history.pushState({n:0},'');
+try{ history.replaceState({n:-1},''); history.pushState({n:0},''); }catch(e){}
 addEventListener('popstate',()=>{
   if(NAV.ignore){ NAV.ignore--; NAV.backs=Math.max(0,NAV.backs-1); while(NAV.queue>0){ NAV.queue--; history.pushState({n:1},''); } return; }
   const c=NAV.stack.pop();
@@ -316,19 +317,20 @@ let scr='scHome', curK=null, curQ=null, hf='all', editMode=false;
 function show(id){ ['scHome','scTerr','scCard'].forEach(s=>$(s).classList.toggle('on',s===id)); scr=id; $('barHome').classList.toggle('hide',id!=='scHome'); $('barSub').classList.toggle('hide',id==='scHome'); $('btnShare').classList.toggle('hide',id!=='scCard'); scrollTo({top:0}); }
 $('btnBack').addEventListener('click',navBack);
 
-/* ---------- código da congregação ---------- */
-$('codeGo').addEventListener('click',async()=>{ const code=$('codeIn').value.trim().toUpperCase().replace(/\s+/g,''); if(!code){ $('codeErr').textContent='Digite o código.'; return; } $('codeGo').disabled=true; $('codeErr').textContent='';
-  try{ if(!auth.currentUser) await auth.signInAnonymously(); const d=await dbFS.collection('codigos').doc(code).get(); if(!d.exists){ $('codeErr').textContent='Código não encontrado. Confira com quem administra o app principal.'; $('codeGo').disabled=false; return; } CFG={code,cong:d.data().cong}; localStorage.setItem('cartoes_cfg',JSON.stringify(CFG)); start(); }
-  catch(e){ $('codeErr').textContent=navigator.onLine?'Não foi possível validar o código. Tente de novo.':'Para o primeiro acesso é preciso internet.'; } $('codeGo').disabled=false; });
-$('codeIn').addEventListener('keydown',e=>{ if(e.key==='Enter') $('codeGo').click(); });
-$('btnCodeChange').addEventListener('click',async()=>{ if(await ask('Trocar o código? As marcações já enviadas continuam na nuvem; as que ainda não subiram serão enviadas quando houver internet.',[['Trocar','primary'],['Cancelar','']])!==0) return; localStorage.removeItem('cartoes_cfg'); location.reload(); });
-auth.onAuthStateChanged(u=>{ if(!u){ auth.signInAnonymously().catch(()=>{}); return; } if(CFG&&!congRef) start(); });
-if(!CFG){ $('gate').classList.remove('hide'); }
+/* ---------- ligação automática: config/padrao diz qual congregação usar ---------- */
+let CFG=null; try{ CFG=JSON.parse(localStorage.getItem('cartoes_cfg')||'null'); }catch(e){}
+async function connect(){ $('gateMsg').textContent='Conectando à congregação…'; $('gateRetry').classList.add('hide');
+  try{ if(!auth.currentUser) await auth.signInAnonymously(); const d=await dbFS.collection('config').doc('padrao').get(); if(!d.exists) throw new Error('sem-padrao'); CFG={cong:d.data().cong,nome:d.data().nome||''}; localStorage.setItem('cartoes_cfg',JSON.stringify(CFG)); start(); }
+  catch(e){ if(CFG){ start(); return; } const code=e&&e.code||''; $('gateMsg').textContent= e&&e.message==='sem-padrao'? 'A congregação ainda não foi registrada. Abra o app Nosso Território uma vez (ele registra sozinho).' : /permission|unauth/.test(code)? 'O servidor recusou a conexão. Confira se o login anônimo e as regras estão publicados no Firebase.' : navigator.onLine? 'Não foi possível conectar. Tente de novo.' : 'Sem internet. Na primeira vez é preciso conexão.'; $('gateRetry').classList.remove('hide'); } }
+$('gateRetry').addEventListener('click',connect);
+$('btnReconnect').addEventListener('click',()=>{ localStorage.removeItem('cartoes_cfg'); location.reload(); });
+auth.onAuthStateChanged(u=>{ if(!u){ auth.signInAnonymously().catch(()=>{ if(CFG) start(); else { $('gateMsg').textContent='Não foi possível entrar. Confira a internet e tente de novo.'; $('gateRetry').classList.remove('hide'); } }); return; } if(!congRef) connect(); });
+if(CFG) start();   // já conectado antes: abre na hora, mesmo sem internet
 
 /* ---------- dados ---------- */
-function start(){ if(!CFG) return; $('gate').classList.add('hide'); congRef=dbFS.collection('congregacoes').doc(CFG.cong); $('cfgCode').textContent=CFG.code;
+function start(){ if(!CFG||congRef) return; $('gate').classList.add('hide'); congRef=dbFS.collection('congregacoes').doc(CFG.cong); $('cfgCong').textContent=CFG.nome||'Congregação';
   unsubs.forEach(u=>u()); unsubs=[];
-  unsubs.push(congRef.collection('publico').doc('dados').onSnapshot(s=>{ if(!s.exists) return; const d=s.data(); NOMES=d.nomes||{}; CONG=d.cong||''; $('cfgCong').textContent=CONG?CONG+' · código informado uma vez':'código informado uma vez'; setSync(); render(); },()=>setSync()));
+  unsubs.push(congRef.collection('publico').doc('dados').onSnapshot(s=>{ if(!s.exists) return; const d=s.data(); NOMES=d.nomes||{}; CONG=d.cong||''; if(CONG) $('cfgCong').textContent=CONG; setSync(); render(); },()=>setSync()));
   unsubs.push(congRef.collection('cartoes').onSnapshot(s=>{ CARDS={}; s.forEach(d=>{ CARDS[d.id]=Object.assign({id:d.id},d.data()); }); render(); setSync(); },()=>setSync()));
   if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
   renderList(); }

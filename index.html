@@ -255,7 +255,7 @@ h1{font-family:var(--hand);font-weight:700;color:var(--ink);font-size:40px;line-
     <div class="chips"><button class="chip" data-f="all" aria-pressed="true">Todas as casas</button><button class="chip" data-f="pend" aria-pressed="false">Só as que faltam</button><button class="chip" data-f="done" aria-pressed="false">Já faladas</button><button class="chip" id="chipEdit" aria-pressed="false">✎ Editar casas</button></div>
     <div class="hhead"><span id="hCount">Nº da casa</span><span>1ª</span><span>2ª</span><span>3ª</span></div>
     <div id="hlist"></div>
-    <div class="addrow"><input id="addIn" type="text" inputmode="numeric" placeholder="Adicionar casa (nº, S/N, comércio…)"><button class="btn" id="addBtn">Adicionar</button></div>
+    <div class="addrow"><input id="addIn" type="text" autocapitalize="characters" autocomplete="off" enterkeyhint="done" placeholder="Adicionar casa (nº, S/N, comércio…)"><button class="btn" id="addBtn">Adicionar</button></div>
     <div class="cfoot"><button class="btn danger" id="btnZero">Zerar cartão</button><button class="btn" id="btnDoneCard" style="margin-left:auto">Próxima quadra →</button></div>
   </div>
   <p class="note" id="cLast">—</p>
@@ -273,7 +273,7 @@ h1{font-family:var(--hand);font-weight:700;color:var(--ink);font-size:40px;line-
   <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn" id="btnSyncNow">Sincronizar agora</button><button class="btn" id="btnCfgClose">Fechar</button></div>
 </section>
 
-<div class="modal" id="editmodal"><div class="box2"><div class="grip"></div><p id="edT">Editar casa</p><label class="f"><span>Número ou descrição da casa</span><input id="edIn" type="text" inputmode="numeric" autocomplete="off"></label><div class="acts"><button class="btn primary" id="edSave">Salvar</button><button class="btn" id="edCancel">Cancelar</button></div></div></div>
+<div class="modal" id="editmodal"><div class="box2"><div class="grip"></div><p id="edT">Editar casa</p><label class="f"><span>Número ou descrição da casa</span><input id="edIn" type="text" autocapitalize="characters" autocomplete="off"></label><div class="acts"><button class="btn primary" id="edSave">Salvar</button><button class="btn" id="edCancel">Cancelar</button></div></div></div>
 <div class="modal" id="askmodal"><div class="box2"><div class="grip"></div><p id="askMsg"></p><div class="acts" id="askActs"></div></div></div>
 <div class="toast" id="toast"></div>
 

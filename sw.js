@@ -1,6 +1,6 @@
 /* Service worker — Cartões 2.0 (página: rede primeiro; resto: cache primeiro; Firestore nunca é interceptado) */
-const CACHE = 'nt-cartoes-v2.4.0';
-const SHELL = ['./index.html', './manifest.json', './icon-192.png', './icon-512.png'];
+const CACHE = 'nt-cartoes-v2.5.1';
+const SHELL = ['./index.html', './instalar/index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 const EXT = ['https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js','https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js','https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js'];
 self.addEventListener('install', e => { e.waitUntil((async () => { const c = await caches.open(CACHE); await c.addAll(SHELL); await Promise.all(EXT.map(u => c.add(new Request(u, { mode: 'no-cors' })).catch(() => {}))); await self.skipWaiting(); })()); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });

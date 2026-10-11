@@ -225,6 +225,12 @@ h1{font-family:var(--hand);font-weight:700;color:var(--ink);font-size:40px;line-
 .gate input:focus{outline:none;border-color:var(--acc)}
 .gate .err{color:var(--red);font-size:12.5px;margin:10px 0 0;min-height:18px}
 .gate .btn{width:100%;justify-content:center;padding:13px;margin-top:12px}
+.instbox{background:var(--ink);color:#fff;border-radius:var(--r);padding:14px 16px;margin:0 0 14px;box-shadow:var(--sh)}
+.instbox b{display:block;font-size:15px;margin-bottom:4px}
+.instbox p{margin:0 0 10px;font-size:13px;opacity:.9;line-height:1.4}
+.instbox .btn{background:#fff;color:var(--ink);border-color:#fff;width:100%;justify-content:center;padding:12px}
+.instbox .x{position:absolute;right:10px;top:8px;color:#fff;font-size:18px;opacity:.7;width:32px;height:32px}
+.instbox{position:relative}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -258,6 +264,7 @@ h1{font-family:var(--hand);font-weight:700;color:var(--ink);font-size:40px;line-
 
 <section class="screen on" id="scHome"><div class="wrap">
   <div class="eyebrow">Cartões de casas</div><h1>Territórios</h1>
+  <div class="instbox hide" id="instbox"><button class="x" id="instX" aria-label="Fechar">×</button><b>Instale o app no celular</b><p id="instTxt">Fica na tela inicial, abre em tela cheia e funciona sem internet.</p><button class="btn" id="instBtn">Instalar o app</button></div>
   <div id="list"></div>
   <p class="note">Toque num território para ver as quadras. Suas marcações ficam no aparelho e sobem sozinhas quando houver internet. Concluir o território é feito no app principal.</p>
 </div></section>
@@ -305,6 +312,7 @@ h1{font-family:var(--hand);font-weight:700;color:var(--ink);font-size:40px;line-
 
 'use strict';
 const $=id=>document.getElementById(id);
+const WANT_INST=/[?&]instalar=1/.test(location.search);
 const pad2=k=>String(k).padStart(2,'0');
 const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const today=()=>iso(new Date());
@@ -454,6 +462,14 @@ $('askmodal').addEventListener('click',e=>{ if(e.target===$('askmodal')) closeAs
 setSync(); renderList();
 if(CFG) start();   // já conectado antes: abre na hora, mesmo sem internet (fica no fim: tudo já declarado)
 
+/* ---------- instalação (PWA) ---------- */
+let instPrompt=null; const wantInst=WANT_INST; const isIOS=/iPhone|iPad|iPod/i.test(navigator.userAgent)&&!window.MSStream; const standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+function instShow(){ const box=$('instbox'); if(!box||standalone) return; let hid=false; try{ hid=localStorage.getItem('inst_hide')==='1'; }catch(e){} if(hid&&!wantInst) return; if(instPrompt){ box.classList.remove('hide'); $('instTxt').textContent='Fica na tela inicial, abre em tela cheia e funciona sem internet.'; $('instBtn').textContent='Instalar o app'; } else if(isIOS){ box.classList.remove('hide'); $('instTxt').textContent='No iPhone: toque em Compartilhar (quadrado com seta) e depois em "Adicionar à Tela de Início".'; $('instBtn').classList.add('hide'); } else if(wantInst){ box.classList.remove('hide'); $('instTxt').textContent='No Chrome: toque nos três pontos (⋮) e em "Instalar aplicativo" ou "Adicionar à tela inicial".'; $('instBtn').classList.add('hide'); } }
+addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); instPrompt=e; $('instBtn').classList.remove('hide'); instShow(); });
+addEventListener('appinstalled',()=>{ $('instbox').classList.add('hide'); toast('App instalado'); });
+if($('instBtn')) $('instBtn').addEventListener('click',async()=>{ if(!instPrompt) return; instPrompt.prompt(); try{ await instPrompt.userChoice; }catch(e){} instPrompt=null; $('instbox').classList.add('hide'); });
+if($('instX')) $('instX').addEventListener('click',()=>{ $('instbox').classList.add('hide'); try{ localStorage.setItem('inst_hide','1'); }catch(e){} });
+setTimeout(instShow,800);
 </script>
 </body>
 </html>

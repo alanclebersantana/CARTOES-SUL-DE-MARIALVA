@@ -123,7 +123,11 @@ h1{font-family:var(--hand);font-weight:700;color:var(--ink);font-size:40px;line-
 .card .ch .m b{display:block;font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .card .ch .m small{display:block;font-size:11.5px;color:var(--ink2);font-weight:600}
 .visits{padding:10px 14px;border-bottom:1px solid var(--line);display:grid;gap:6px}
-.visit{display:grid;grid-template-columns:30px 1fr 1fr;gap:8px;align-items:center}
+.visit{display:grid;grid-template-columns:30px 1fr;gap:10px;align-items:center;min-height:36px;text-align:left}
+.visit .vd{display:block;text-align:left;font-size:13.5px;font-weight:700;color:var(--text);line-height:1.3;min-width:0}
+.visit .vd small{display:block;font-size:11.5px;font-weight:600;color:var(--muted)}
+.visit .vd.none{color:var(--amber,#B8730F)}
+.visit .vd.nodate{color:var(--muted);font-weight:600}
 .visit .n{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-weight:800;font-size:13px;background:var(--surface2);border:1px solid var(--line);color:var(--muted)}
 .visit .n[data-on="1"]{background:var(--acc);color:var(--acc-t);border-color:transparent}
 .visit input,.visit select{width:100%;background:var(--surface2);border:1px solid var(--line);border-radius:var(--r3);padding:8px 10px;font-size:13.5px;min-width:0}
@@ -159,6 +163,22 @@ h1{font-family:var(--hand);font-weight:700;color:var(--ink);font-size:40px;line-
 .house .ed.del svg{stroke:var(--red)}
 .house .nm .tagx{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--acc);background:var(--acc-soft);border-radius:99px;padding:2px 6px;margin-left:6px;vertical-align:middle}
 .hhead.edit{grid-template-columns:1fr 44px 44px}
+.hhead.one{grid-template-columns:1fr 44px}
+.house.one{grid-template-columns:1fr 44px}
+.house.sel{cursor:pointer}
+.house.sel.on{background:var(--red-soft)}
+.house .ed.chk svg{opacity:0}
+.house.on .ed.chk{background:var(--red);border-color:var(--red)}
+.house.on .ed.chk svg{opacity:1;stroke:#fff}
+.ebar{display:flex;gap:6px;padding:10px 14px 4px;flex-wrap:wrap;align-items:center;background:var(--surface2);border-bottom:1px solid var(--line)}
+.ebar .chip[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:var(--acc-t)}
+.ebar .end{margin-left:auto}
+.nonerow{padding:10px 14px;border-top:1px solid var(--line)}
+.nonerow p{margin:0 0 8px;font-size:12.5px;font-weight:700;color:var(--muted)}
+.nonerow .seg{display:flex;gap:6px}
+.nonerow .seg button{flex:1;padding:10px 4px;font-size:12.5px;font-weight:700;background:var(--surface);border:1px solid var(--line);border-radius:var(--r3);color:var(--muted)}
+.nonerow .seg button[aria-pressed="true"]{background:#FBEFD9;border-color:#F1D7A3;color:#7A4E07}
+.nonerow .seg button:disabled{opacity:.45}
 .modal .f{display:block;margin:0 0 12px}
 .modal .f span{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px}
 .modal .f input{width:100%;background:var(--surface2);border:1px solid var(--line);border-radius:var(--r3);padding:11px 12px;font-size:16px;font-weight:700}
@@ -252,11 +272,14 @@ h1{font-family:var(--hand);font-weight:700;color:var(--ink);font-size:40px;line-
   <div class="card">
     <div class="ch"><div class="q" id="cQ"><small>Quadra</small>2A</div><div class="m"><b id="cName">—</b><small id="cMapa">Mapa —</small></div></div>
     <div class="visits" id="visits"></div>
-    <div class="chips"><button class="chip" data-f="all" aria-pressed="true">Todas as casas</button><button class="chip" data-f="pend" aria-pressed="false">Só as que faltam</button><button class="chip" data-f="done" aria-pressed="false">Já faladas</button><button class="chip" id="chipEdit" aria-pressed="false">✎ Editar casas</button></div>
+    <div class="chips"><button class="chip" data-f="all" aria-pressed="true">Todas as casas</button><button class="chip" data-f="pend" aria-pressed="false">Só as que faltam</button><button class="chip" data-f="done" aria-pressed="false">Já faladas</button></div>
+    <div class="ebar hide" id="ebar"><button class="chip" data-e="num" aria-pressed="true">Editar números</button><button class="chip" data-e="sel" aria-pressed="false">Excluir selecionados</button><button class="chip" data-e="all" aria-pressed="false">Excluir todos</button><button class="chip end" id="editEnd">Concluir</button></div>
     <div class="hhead"><span id="hCount">Nº da casa</span><span>1ª</span><span>2ª</span><span>3ª</span></div>
     <div id="hlist"></div>
+    <div class="cfoot hide" id="selfoot"><button class="btn danger" id="btnDelSel" style="width:100%;justify-content:center">Excluir selecionadas</button></div>
+    <div class="nonerow" id="nonerow"><p>Não falamos em nenhuma casa no dia:</p><div class="seg" id="noneSeg"><button data-n="0">1º dia</button><button data-n="1">2º dia</button><button data-n="2">3º dia</button></div></div>
     <div class="addrow"><input id="addIn" type="text" autocapitalize="characters" autocomplete="off" enterkeyhint="done" placeholder="Adicionar casa (nº, S/N, comércio…)"><button class="btn" id="addBtn">Adicionar</button></div>
-    <div class="cfoot"><button class="btn danger" id="btnZero">Zerar cartão</button><button class="btn" id="btnDoneCard" style="margin-left:auto">Próxima quadra →</button></div>
+    <div class="cfoot"><button class="btn" id="btnEdit">✎ Editar casas</button><button class="btn danger" id="btnZero">Zerar cartão</button><button class="btn" id="btnDoneCard" style="margin-left:auto">Próxima quadra →</button></div>
   </div>
   <p class="note" id="cLast">—</p>
 </div></section>
@@ -314,7 +337,9 @@ addEventListener('popstate',()=>{
   if(!c||!history.state||history.state.n<0){ history.pushState({n:0},''); if(c) c(); return; }
   c();
 });
-let scr='scHome', curK=null, curQ=null, hf='all', editMode=false;
+let scr='scHome', curK=null, curQ=null, hf='all', editMode=false, editSub='num', selSet=new Set();
+function periodoAgora(){ const h=new Date().getHours(); return h<12?'Manhã':h<18?'Tarde':'Noite'; }
+function blankV(){ return [{d:'',p:''},{d:'',p:''},{d:'',p:''}]; }
 function fitTop(){ document.documentElement.style.setProperty('--toph',$('top').offsetHeight+'px'); }
 try{ new ResizeObserver(fitTop).observe($('top')); }catch(e){ addEventListener('resize',fitTop); } fitTop();
 function show(id){ ['scHome','scTerr','scCard'].forEach(s=>$(s).classList.toggle('on',s===id)); scr=id; $('barHome').classList.toggle('hide',id!=='scHome'); $('barSub').classList.toggle('hide',id==='scHome'); $('btnShare').classList.toggle('hide',id!=='scCard'); fitTop(); scrollTo({top:0}); }
@@ -381,24 +406,28 @@ function renderTerr(){ const k=curK,p=tProgress(k),qs=cardsOf(k); $('tsum').inne
   $('qgrid').querySelectorAll('[data-q]').forEach(b=>b.addEventListener('click',()=>openCard(b.dataset.q))); }
 
 /* ---------- tela 3: cartão ---------- */
-function openCard(id,fromNav){ const c=CARDS[id]; if(!c) return; curQ=id; curK=String(c.mapa); hf='all'; editMode=false; $('chipEdit').setAttribute('aria-pressed','false'); if(!fromNav) navPush(()=>{ renderTerr(); show('scTerr'); $('tTitle').textContent=`${pad2(curK)} · ${nome(curK)}`; $('tSub').textContent=areaOf(curK); });
+function openCard(id,fromNav){ const c=CARDS[id]; if(!c) return; curQ=id; curK=String(c.mapa); hf='all'; editMode=false; editSub='num'; selSet=new Set(); if(!fromNav) navPush(()=>{ renderTerr(); show('scTerr'); $('tTitle').textContent=`${pad2(curK)} · ${nome(curK)}`; $('tSub').textContent=areaOf(curK); });
   $('tTitle').textContent=`Quadra ${c.quadra} · ${nome(curK)}`; $('tSub').textContent=`Mapa ${pad2(curK)} · ${areaOf(curK)}`; $('cQ').innerHTML=`<small>Quadra</small>${esc(c.quadra)}`; $('cName').textContent=nome(curK); $('cMapa').textContent='Mapa '+pad2(curK); document.querySelectorAll('.chips .chip[data-f]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.f==='all'))); renderCard(); show('scCard'); }
 function renderCard(){ const c=CARDS[curQ]; if(!c) return; const v=c.v||[{d:'',p:''},{d:'',p:''},{d:'',p:''}];
-  $('visits').innerHTML=v.map((x,i)=>`<div class="visit"><span class="n" data-on="${x.d?1:0}">${i+1}ª</span><input type="date" data-v="${i}" value="${x.d||''}" aria-label="Data da ${i+1}ª visita"><select data-vp="${i}" aria-label="Período da ${i+1}ª visita"><option value="">Período</option>${PERIODOS.map(p=>`<option ${x.p===p?'selected':''}>${p}</option>`).join('')}</select></div>`).join('');
-  $('visits').querySelectorAll('input').forEach(i=>i.addEventListener('change',e=>{ const vv=JSON.parse(JSON.stringify(v)); vv[+e.target.dataset.v].d=e.target.value; c.v=vv; c.ts=Date.now(); track(cardRef(curQ).update({v:vv,ts:c.ts})); renderCard(); }));
-  $('visits').querySelectorAll('select').forEach(i=>i.addEventListener('change',e=>{ const vv=JSON.parse(JSON.stringify(v)); vv[+e.target.dataset.vp].p=e.target.value; c.v=vv; c.ts=Date.now(); track(cardRef(curQ).update({v:vv,ts:c.ts})); }));
+  $('visits').innerHTML=v.map((x,i)=>{ const on=!!x.d; const txt=on?`${br(x.d)}${x.p?' · '+x.p:''}`:'ainda sem data'; const sub=on?(x.none?'nenhuma casa falada neste dia':`${houses(c).filter(h=>marks(c,h)[i]).length} casa(s) falada(s)`):'a data entra sozinha ao marcar a 1ª casa'; return `<div class="visit"><span class="n" data-on="${on?1:0}">${i+1}ª</span><span class="vd ${on?(x.none?'none':''):'nodate'}">${txt}<small>${sub}</small></span></div>`; }).join('');
   const hs=houses(c),p=progress(c);
-  const hh=document.querySelector('.hhead'); hh.classList.toggle('edit',editMode); hh.innerHTML=editMode?`<span>Lápis corrige · ✕ remove</span><span>✎</span><span>✕</span>`:`<span>${p.d} de ${p.n} faladas</span><span>1ª</span><span>2ª</span><span>3ª</span>`;
+  const hh=document.querySelector('.hhead'); hh.classList.toggle('edit',false); hh.classList.toggle('one',editMode); $('ebar').classList.toggle('hide',!editMode); $('selfoot').classList.toggle('hide',!(editMode&&editSub==='sel')); $('nonerow').classList.toggle('hide',editMode); $('btnEdit').classList.toggle('hide',editMode); $('ebar').querySelectorAll('[data-e]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.e===editSub))); $('btnDelSel').textContent=selSet.size?`Excluir ${selSet.size} selecionada${selSet.size>1?'s':''}`:'Toque nas casas para selecionar'; $('btnDelSel').disabled=!selSet.size; hh.innerHTML=editMode?(editSub==='sel'?`<span>Toque para selecionar</span><span>✓</span>`:`<span>Toque no lápis para corrigir</span><span>✎</span>`):`<span>${p.d} de ${p.n} faladas</span><span>1ª</span><span>2ª</span><span>3ª</span>`;
   const shown=hs.filter(h=>editMode||hf==='all'||(hf==='pend'?!talked(c,h):talked(c,h)));
-  $('hlist').innerHTML=hs.length?(shown.length?shown.map(h=>{ const m=marks(c,h); if(editMode) return `<div class="house edit"><span class="nm">${esc(h)}${(c.extra||[]).includes(h)?'<span class="tagx">adicionada</span>':''}</span><button class="ed" data-edit="${esc(h)}" aria-label="Editar casa ${esc(h)}"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><button class="ed del" data-del="${esc(h)}" aria-label="Remover casa ${esc(h)}"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>`; return `<div class="house ${m.some(Boolean)?'done':'pending'}"><span class="nm">${esc(h)}</span>${[0,1,2].map(j=>`<button class="box" data-col="${j+1}" data-c="${esc(h)}" data-j="${j}" role="checkbox" aria-checked="${m[j]?'true':'false'}" aria-label="Casa ${esc(h)}, ${j+1}ª visita"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button>`).join('')}</div>`; }).join(''):'<div class="empty">Nada aqui com este filtro.</div>'):'<div class="empty">Este cartão ainda não tem casas cadastradas.<br>Use "Adicionar casa" abaixo, na ordem da rua.</div>';
-  $('hlist').querySelectorAll('.box').forEach(b=>b.addEventListener('click',()=>{ const h=b.dataset.c,j=+b.dataset.j; const m=marks(c,h).slice(); m[j]=m[j]?0:1; c.c=c.c||{}; c.c[h]=m; c.ts=Date.now(); const args=[new FP('c',h),m,'ts',c.ts]; if(m[j]&&!(v[j]||{}).d){ const vv=JSON.parse(JSON.stringify(v)); vv[j].d=today(); c.v=vv; args.push('v',vv); } track(cardRef(curQ).update(...args)); renderCard(); }));
+  $('hlist').innerHTML=hs.length?(shown.length?shown.map(h=>{ const m=marks(c,h); if(editMode&&editSub==='sel') return `<div class="house one sel${selSet.has(h)?' on':''}" data-sel="${esc(h)}"><span class="nm">${esc(h)}${(c.extra||[]).includes(h)?'<span class="tagx">adicionada</span>':''}</span><span class="ed chk"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span></div>`; if(editMode) return `<div class="house one"><span class="nm">${esc(h)}${(c.extra||[]).includes(h)?'<span class="tagx">adicionada</span>':''}</span><button class="ed" data-edit="${esc(h)}" aria-label="Editar casa ${esc(h)}"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button></div>`; return `<div class="house ${m.some(Boolean)?'done':'pending'}"><span class="nm">${esc(h)}</span>${[0,1,2].map(j=>`<button class="box" data-col="${j+1}" data-c="${esc(h)}" data-j="${j}" role="checkbox" aria-checked="${m[j]?'true':'false'}" aria-label="Casa ${esc(h)}, ${j+1}ª visita"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button>`).join('')}</div>`; }).join(''):'<div class="empty">Nada aqui com este filtro.</div>'):'<div class="empty">Este cartão ainda não tem casas cadastradas.<br>Use "Adicionar casa" abaixo, na ordem da rua.</div>';
+  $('hlist').querySelectorAll('.box').forEach(b=>b.addEventListener('click',()=>{ const h=b.dataset.c,j=+b.dataset.j; const m=marks(c,h).slice(); m[j]=m[j]?0:1; c.c=c.c||{}; c.c[h]=m; c.ts=Date.now(); const args=[new FP('c',h),m,'ts',c.ts]; if(m[j]&&(!(v[j]||{}).d||v[j].none||!v[j].p)){ const vv=JSON.parse(JSON.stringify(v)); if(!vv[j].d) vv[j].d=today(); if(!vv[j].p) vv[j].p=periodoAgora(); vv[j].none=false; c.v=vv; args.push('v',vv); } track(cardRef(curQ).update(...args)); renderCard(); }));
   $('hlist').querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click',()=>editHouse(b.dataset.edit)));
-  $('hlist').querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',async()=>{ const h=b.dataset.del; const m=talked(c,h); if(await ask(`Remover a casa ${h} deste cartão?${m?' As marcações dela serão apagadas.':''} Tem certeza?`,[['Sim, remover','danger'],['Cancelar','']])!==0) return; removeHouse(c,h); renderCard(); toast(`Casa ${h} removida`); }));
+  $('hlist').querySelectorAll('[data-sel]').forEach(b=>b.addEventListener('click',()=>{ const h=b.dataset.sel; if(selSet.has(h)) selSet.delete(h); else selSet.add(h); renderCard(); }));
+  $('noneSeg').querySelectorAll('button').forEach(b=>{ const j=+b.dataset.n; const has=hs.some(h=>marks(c,h)[j]); b.setAttribute('aria-pressed',String(!!(v[j]&&v[j].none))); b.disabled=has; b.title=has?'Já há casas marcadas neste dia':''; });
   $('cLast').textContent=c.ts?`Última marcação neste cartão: ${new Date(c.ts).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}`:'Nenhuma marcação ainda.'; }
 function origOf(c,n){ return Object.keys(c.ren||{}).find(o=>c.ren[o]===n)||n; }
 function renameHouse(c,o,n){ const args=[]; c.ts=Date.now(); if((c.extra||[]).includes(o)){ c.extra=c.extra.map(x=>x===o?n:x); args.push('extra',c.extra); } else { const orig=origOf(c,o); c.ren=c.ren||{}; c.ren[orig]=n; args.push(new FP('ren',orig),n); } if(c.c&&c.c[o]){ c.c[n]=c.c[o]; delete c.c[o]; args.push(new FP('c',n),c.c[n],new FP('c',o),FV.delete()); } args.push('ts',c.ts); track(cardRef(c.id).update(...args)); }
 function removeHouse(c,n){ const args=[]; c.ts=Date.now(); if((c.extra||[]).includes(n)){ c.extra=c.extra.filter(x=>x!==n); args.push('extra',c.extra); } else { const orig=origOf(c,n); c.del=[...(c.del||[]),orig]; args.push('del',FV.arrayUnion(orig)); if(c.ren&&c.ren[orig]){ delete c.ren[orig]; args.push(new FP('ren',orig),FV.delete()); } } if(c.c&&c.c[n]){ delete c.c[n]; args.push(new FP('c',n),FV.delete()); } args.push('ts',c.ts); track(cardRef(c.id).update(...args)); }
-$('chipEdit').addEventListener('click',()=>{ editMode=!editMode; $('chipEdit').setAttribute('aria-pressed',String(editMode)); renderCard(); });
+$('btnEdit').addEventListener('click',async()=>{ if(await ask('Quer mesmo editar as casas deste cartão? Dá para corrigir números, excluir as selecionadas ou excluir todas.',[['Sim, editar','primary'],['Não','']])!==0) return; editMode=true; editSub='num'; selSet=new Set(); renderCard(); });
+$('editEnd').addEventListener('click',()=>{ editMode=false; selSet=new Set(); renderCard(); });
+$('ebar').querySelectorAll('[data-e]').forEach(b=>b.addEventListener('click',async()=>{ const e=b.dataset.e; if(e==='all'){ const c=CARDS[curQ],hs=houses(c); if(!hs.length){ toast('O cartão já está sem casas'); return; } if(await ask(`Excluir TODAS as ${hs.length} casas deste cartão? As marcações também serão apagadas. Tem certeza?`,[['Sim, excluir todas','danger'],['Cancelar','']])!==0) return; removeAll(c); editMode=false; renderCard(); toast('Todas as casas foram excluídas'); return; } editSub=e; selSet=new Set(); renderCard(); }));
+$('btnDelSel').addEventListener('click',async()=>{ const c=CARDS[curQ]; const list=[...selSet]; if(!list.length) return; const marked=list.filter(h=>talked(c,h)).length; if(await ask(`Excluir ${list.length} casa${list.length>1?'s':''} (${list.join(', ')})?${marked?' As marcações delas serão apagadas.':''} Tem certeza?`,[['Sim, excluir','danger'],['Cancelar','']])!==0) return; list.forEach(h=>removeHouse(c,h)); selSet=new Set(); renderCard(); toast(`${list.length} casa${list.length>1?'s':''} excluída${list.length>1?'s':''}`); });
+function removeAll(c){ const hs=houses(c); const orig=(c.casas||[]).filter(x=>!(c.del||[]).includes(x)); c.del=[...new Set([...(c.del||[]),...orig])]; c.extra=[]; c.ren={}; c.c={}; c.ts=Date.now(); track(cardRef(c.id).update({del:c.del,extra:[],ren:{},c:{},ts:c.ts})); }
+$('noneSeg').addEventListener('click',async e=>{ const b=e.target.closest('button'); if(!b||b.disabled) return; const j=+b.dataset.n; const c=CARDS[curQ]; const vv=JSON.parse(JSON.stringify(c.v||blankV())); if(vv[j].none){ if(await ask(`Desmarcar "nenhuma casa falada" no ${j+1}º dia?`,[['Sim','primary'],['Cancelar','']])!==0) return; vv[j].none=false; vv[j].d=''; vv[j].p=''; } else { if(await ask(`Registrar que no ${j+1}º dia (${br(today())}, ${periodoAgora().toLowerCase()}) não falamos em nenhuma casa desta quadra?`,[['Sim, registrar','primary'],['Cancelar','']])!==0) return; vv[j].none=true; vv[j].d=today(); vv[j].p=periodoAgora(); } c.v=vv; c.ts=Date.now(); track(cardRef(curQ).update({v:vv,ts:c.ts})); renderCard(); });
 let edTarget=null;
 function editHouse(h){ edTarget=h; $('edT').textContent=`Corrigir a casa ${h}`; $('edIn').value=h; $('editmodal').classList.add('open'); navPush(()=>closeEdit(true)); setTimeout(()=>{ $('edIn').focus(); $('edIn').select(); },50); }
 function closeEdit(fromNav){ if(!$('editmodal').classList.contains('open')) return; $('editmodal').classList.remove('open'); if(!fromNav) navPop(); }
@@ -408,7 +437,7 @@ $('edIn').addEventListener('keydown',e=>{ if(e.key==='Enter') $('edSave').click(
 document.querySelector('.chips').addEventListener('click',e=>{ const b=e.target.closest('.chip'); if(!b||!b.dataset.f) return; hf=b.dataset.f; document.querySelectorAll('.chips .chip[data-f]').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); renderCard(); });
 $('addBtn').addEventListener('click',()=>{ const c=CARDS[curQ]; const v=$('addIn').value.trim(); if(!v) return; if(houses(c).includes(v)){ toast('Essa casa já está no cartão'); return; } c.extra=[...(c.extra||[]),v]; c.ts=Date.now(); track(cardRef(curQ).update({extra:FV.arrayUnion(v),ts:c.ts})); $('addIn').value=''; renderCard(); toast('Casa adicionada'); });
 $('addIn').addEventListener('keydown',e=>{ if(e.key==='Enter') $('addBtn').click(); });
-$('btnZero').addEventListener('click',async()=>{ const c=CARDS[curQ],p=progress(c); if(await ask(`Zerar o cartão da quadra ${c.quadra}? ${p.d?`As ${p.d} casas marcadas e as datas das visitas serão apagadas.`:'As datas das visitas serão apagadas.'} Tem certeza?`,[['Sim, zerar o cartão','danger'],['Cancelar','']])!==0) return; c.c={}; c.v=[{d:'',p:''},{d:'',p:''},{d:'',p:''}]; c.ts=Date.now(); track(cardRef(curQ).update({c:{},v:c.v,ts:c.ts})); renderCard(); toast('Cartão zerado'); });
+$('btnZero').addEventListener('click',async()=>{ const c=CARDS[curQ],p=progress(c); if(await ask(`Zerar o cartão da quadra ${c.quadra}? ${p.d?`As ${p.d} casas marcadas e as datas das visitas serão apagadas.`:'As datas das visitas serão apagadas.'} Tem certeza?`,[['Sim, zerar o cartão','danger'],['Cancelar','']])!==0) return; c.c={}; c.v=blankV(); c.ts=Date.now(); track(cardRef(curQ).update({c:{},v:c.v,ts:c.ts})); renderCard(); toast('Cartão zerado'); });
 $('btnDoneCard').addEventListener('click',()=>{ const qs=cardsOf(curK); const i=qs.findIndex(x=>x.id===curQ); if(qs.length<2){ toast('Este território só tem esta quadra'); return; } const nx=qs[(i+1)%qs.length]; openCard(nx.id,true); toast(`Quadra ${nx.quadra}`); });
 $('btnShare').addEventListener('click',()=>{ const c=CARDS[curQ],p=progress(c),hs=houses(c),falta=hs.filter(h=>!talked(c,h)); const txt=`*MAPA ${pad2(curK)} · ${nome(curK)} · QUADRA ${c.quadra}*\n${p.d} de ${p.n} casas faladas${(c.v||[]).filter(x=>x.d).map((x,i)=>`\n${i+1}ª visita: ${br(x.d)}${x.p?' · '+x.p:''}`).join('')}${falta.length?`\nFaltam: ${falta.join(', ')}`:'\nQuadra completa.'}`; if(navigator.share){ navigator.share({text:txt}).catch(()=>{}); return; } window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank','noopener'); });
 
